@@ -33,35 +33,34 @@ class PCRLogic:
 		return list()
 
 	def make_probabilistic_deductions(self):
-		database = self.pcr_database
-		pcrs = database.pcrs
-		aliquots = list()
-		for pcr in pcrs:
-			aliquots.extend(pcr.aliquots)
-		aliquots = set(aliquots)
-		prune_nondefective(aliquots, pcrs)
-		aliquots = list(aliquots)
+		# Create a list of aliquots that may have been defective
+		pcrs = self.pcr_database.pcrs
+		aliquots = [pcr.aliquots for pcr in pcrs]
+		aliquots = set([i for i in itertools.chain.from_iterable(aliquots)])
+		aliquots = list(self.prune_nondefective(aliquots, pcrs))
+
+		# Create all possible aliquot assignments of defective/non-defective
 		assignments = [tup for tup in itertools.product([False, True], repeat = len(aliquots))]
 		assignment_map = {}
 		for assignment in assignments:
 			assignment_map[assignment] = process_assignment(assignment, aliquots, pcrs)
 		results = sorted(aliquots, key=lambda aliquot: get_bayesian_prob(aliquots.index(aliquot), assignment_map))
 
-	def prune_nondefective(aliquots, pcrs):
-		nondefectives = [pcr in pcrs if not pcr.had_defective_reagent()]
+	def prune_nondefective(self, aliquots, pcrs):
+		nondefectives = [pcr for pcr in pcrs if not pcr.had_defective_reagent()]
 		for pcr in nondefectives:
-			aliquots.remove(set(pcr.aliquots))
-
-	def process_assignment(assignment, aliquots, pcrs):
+			aliquots = aliquots.difference(set(pcr.aliquots))
+		return aliquots
+			
+	def process_assignment(self, assignment, aliquots, pcrs):
 		prob = 1.0
 		for i in range(len(assignment)):
-			prob *= get_defective_prob(i, aliquots) if assignment[i] else 1 - get_defective_prob(i, aliquots)
+			prob *= self.get_defective_prob(i, aliquots) if assignment[i] else 1 - self.get_defective_prob(i, aliquots)
 		defective_aliquots = set([aliquots[i] for i in range(len(assignment)) if assignment[i]])
-		for pcr in pcrs:
-			if pcr.had_defective_reagent():
-				pcr_aliquots = set(pcr.aliquots)
-				if len(defective_aliquots.intersection(pcr_aliquots)) == 0:
-					return (prob, False)
+		defective_pcrs_aliquots = [set(pcr.aliquots) for pcr in pcrs if pcr.had_defective_reagent()]
+		for defective_pcr_aliquots in defective_pcrs_aliquots:
+			if defective_pcr_aliquots.intersection(defective_aliquots):
+				return (prob, False)
 		return (prob, True)
 
 	def get_bayesian_prob(aliquot_index, assignment_map):
@@ -79,7 +78,7 @@ class PCRLogic:
 		bayes_numerator = prob_results_given_defective * prob_defective
 		return bayes_numerator / (bayes_numerator * prob_fine * prob_results_given_fine)
 
-	def get_defective_prob(index, aliquots):
+	def get_defective_prob(self, index, aliquots):
 		return 0.5
 	
 	def find_defective_aliquots(self, pcr):

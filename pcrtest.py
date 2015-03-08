@@ -12,6 +12,7 @@ def main():
 	test_no_deduction_possible()
 	test_basic_contamination()
 	test_basic_defective()
+	test_probabilistic_deductions()
 
 """
 In this test case, we have one perfect PCR in our database.  We want to make deductions
@@ -118,7 +119,26 @@ def test_perfect_pcr():
 	else:
 		print 'Perfect PCR test FAILED!'
 	
+"""
+This tests the probabilistic PSM in PCRLogic.
+"""
+def test_probabilistic_deductions():
+	db = PCRDatabase()
+	primer1 = Aliquot(PRIMER, '1', 'Biowares')
+	taq1 = Aliquot(TAQ, '1', 'Biowares')
+	dntp1 = Aliquot(DNTP, '1', 'Biowares')
+	buffer1 = Aliquot(BUFFER, '1', 'Biowares')
+	pcr = PCR(True, False, [primer1, taq1, dntp1, buffer1])
+	db.add_pcr(pcr)
 
+	buffer2 = Aliquot(BUFFER, '2', 'Biowares')
+	taq2 = Aliquot(TAQ, '2', 'Biowares')
+	pcr2 = PCR(False, False, [primer1, taq2, dntp1, buffer2])
+	db.add_pcr(pcr2)
+	
+	logic = PCRLogic(db)
+	possible_culprits = logic.make_probabilistic_deductions()
+	print possible_culprits
 
 if __name__ == "__main__":
     main()
