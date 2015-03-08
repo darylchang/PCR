@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys
+import random, sys
 from pcrlogic import PCRLogic
 from pcrclasses import *
 """
@@ -14,6 +14,7 @@ def main():
 	test_basic_defective()
 	test_probabilistic_deductions_defective()
 	test_probabilistic_deductions_contaminated()
+	simulate_pcrs()
 
 """
 In this test case, we have one perfect PCR in our database.  We want to make deductions
@@ -175,6 +176,22 @@ def test_probabilistic_deductions_contaminated():
 	logic = PCRLogic(db)
 	possible_culprits = logic.make_probabilistic_deductions()
 	print possible_culprits
+
+"""
+Simulates PCRs and evaluates RMSE of probabilistic deductions.
+"""
+def simulate_pcrs():
+	db = PCRDatabase()
+
+	aliquot_ids = [1 for reagent in REAGENT_MAP]
+	aliquots = [Aliquot(reagent, 1, 'Biowares') for reagent in REAGENT_MAP]
+	aliquot_states = dict([(aliquot, random.choice(['contaminated', 'defective', 'good'])) for aliquot in aliquots])
+	print aliquot_states
+
+	while True:
+		for reagent in REAGENT_MAP:
+			pass
+
 
 if __name__ == "__main__":
     main()

@@ -12,6 +12,8 @@ BUFFER = 3
 BIVALENT_CATION = 4
 MONOVALENT_CATION = 5
 
+REAGENT_MAP = {0: 'PRIMER', 1: 'TAQ', 2: 'DNTP', 3: 'BUFFER', 4: 'BIVALENT_CATION', 5: 'MONOVALENT_CATION'}
+
 class PCR:
 	def __init__(self, pos_control_result, negative_control_result, aliquots):
 		if pos_control_result == False and negative_control_result == True:
