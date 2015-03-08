@@ -30,8 +30,7 @@ class PCRLogic:
 		return list()
 
 	def make_probabilistic_deductions(self):
-		database = self.pcr_database
-		pcrs = database.pcrs
+		pcrs = self.pcr_database.pcrs
 		aliquots = list()
 		for pcr in pcrs:
 			aliquots.extend(pcr.aliquots)
