@@ -33,47 +33,54 @@ class PCRLogic:
 		return list()
 
 	def make_probabilistic_deductions(self):
-		# Create a list of aliquots that may have been defective
-		pcrs = self.pcr_database.pcrs
-		aliquots = [pcr.aliquots for pcr in pcrs]
-		aliquots = set([i for i in itertools.chain.from_iterable(aliquots)])
-		aliquots = list(self.prune_nondefective(aliquots, pcrs))
+		errors = ['defective', 'contaminated']
+		results = {}
+		for error in errors:
+			# Create a list of aliquots that may have been bad
+			pcrs = self.pcr_database.pcrs
+			aliquots = [pcr.aliquots for pcr in pcrs]
+			aliquots = set([i for i in itertools.chain.from_iterable(aliquots)])
+			aliquots = list(self.prune_aliquots(aliquots, pcrs, error))
 
-		# Create all possible aliquot assignments of defective/non-defective
-		assignments = [tup for tup in itertools.product([False, True], repeat = len(aliquots))]
-		assignment_map = {}
-		for assignment in assignments:
-			assignment_map[assignment] = self.process_assignment(assignment, aliquots, pcrs)
-		results = [(aliquots[i].reagent, aliquots[i].id, self.get_bayesian_prob(i, assignment_map)) for i in range(len(aliquots))]
-		results.sort(key=lambda x:x[2], reverse=True)
+			# Create all possible aliquot assignments of defective/non-defective
+			assignments = [tup for tup in itertools.product([False, True], repeat = len(aliquots))]
+			assignment_map = {}
+			for assignment in assignments:
+				assignment_map[assignment] = self.process_assignment(assignment, aliquots, pcrs, error)
+			aliquot_results = [(aliquots[i].reagent, aliquots[i].id, self.get_bayesian_prob(i, assignment_map)) for i in range(len(aliquots))]
+			aliquot_results.sort(key=lambda x:x[2], reverse=True)
+			results[error] = aliquot_results
 		return results
 
-	def prune_nondefective(self, aliquots, pcrs):
-		nondefectives = [pcr for pcr in pcrs if not pcr.had_defective_reagent()]
-		for pcr in nondefectives:
+	def prune_aliquots(self, aliquots, pcrs, error):
+		clean_pcrs = [pcr for pcr in pcrs if not pcr.had_bad_reagent(error)]
+		for pcr in clean_pcrs:
 			aliquots = aliquots.difference(set(pcr.aliquots))
 		return aliquots
 			
-	def process_assignment(self, assignment, aliquots, pcrs):
+	def process_assignment(self, assignment, aliquots, pcrs, error):
 		prob = 1.0
 		for i in range(len(assignment)):
-			prob *= self.get_defective_prob(i, aliquots) if assignment[i] else 1 - self.get_defective_prob(i, aliquots)
-		defective_aliquots = set([aliquots[i] for i in range(len(assignment)) if assignment[i]])
-		defective_pcrs_aliquots = [set(pcr.aliquots) for pcr in pcrs if pcr.had_defective_reagent()]
-		for defective_pcr_aliquots in defective_pcrs_aliquots:
-			if not defective_pcr_aliquots.intersection(defective_aliquots):
+			prob *= self.get_error_prob(i, aliquots, error) if assignment[i] else 1 - self.get_error_prob(i, aliquots, error)
+		bad_aliquots = set([aliquots[i] for i in range(len(assignment)) if assignment[i]])
+		bad_pcrs_aliquots = [set(pcr.aliquots) for pcr in pcrs if pcr.had_bad_reagent(error)]
+		for bad_pcr_aliquots in bad_pcrs_aliquots:
+			if not bad_pcr_aliquots.intersection(bad_aliquots):
 				return (prob, False)
 		return (prob, True)
 
 	def get_bayesian_prob(self, aliquot_index, assignment_map):
 		temp_list = [assignment_map[assign] for assign in assignment_map if assign[aliquot_index]]
-		prob_results_given_defective = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
+		prob_results_given_error = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
 		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquot_index]]
 		prob_results_given_fine = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
-		return prob_results_given_defective / (prob_results_given_defective + prob_results_given_fine)
+		return prob_results_given_error / (prob_results_given_error + prob_results_given_fine)
 
-	def get_defective_prob(self, index, aliquots):
-		return 0.1
+	def get_error_prob(self, index, aliquots, error):
+		if error == 'defective':
+			return 0.1
+		elif error == 'contaminated':
+			return 0.1
 	
 	def find_defective_aliquots(self, pcr):
 		# Start out with all the aliquots as defective candidates

@@ -30,6 +30,12 @@ class PCR:
 		
 	def had_contaminated_reagent(self):
 		return self.negative_control_result == True
+
+	def had_bad_reagent(self, error):
+		if error == 'defective':
+			return self.had_defective_reagent()
+		elif error == 'contaminated':
+			return self.had_contaminated_reagent()
 	
 	
 class Aliquot:
