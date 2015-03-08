@@ -67,18 +67,10 @@ class PCRLogic:
 
 	def get_bayesian_prob(self, aliquot_index, assignment_map):
 		temp_list = [assignment_map[assign] for assign in assignment_map if assign[aliquot_index]]
-		prob_defective = sum([tup[PROB_INDEX] for tup in temp_list])
 		prob_results_given_defective = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
 		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquot_index]]
-		prob_fine = 1 - prob_defective
-		# Sanity check Start, remove in final build
-		prob_fine2 = sum([tup[PROB_INDEX] for tup in temp_list])
-		if prob_fine != prob_fine2:
-			sys.exit("Bayesian sanity check failed.")
-		# Sanity check End
 		prob_results_given_fine = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
-		bayes_numerator = prob_results_given_defective * prob_defective
-		return bayes_numerator / (bayes_numerator + prob_fine * prob_results_given_fine)
+		return prob_results_given_defective / (prob_results_given_defective * prob_results_given_fine)
 
 	def get_defective_prob(self, index, aliquots):
 		return 0.5
