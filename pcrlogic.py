@@ -5,6 +5,9 @@ import copy
 import sys
 import itertools
 
+PROB_INDEX = 0
+FIT_INDEX = 1
+
 class PCRLogic:
 	def __init__(self, pcr_database):
 		self.pcr_database = pcr_database
@@ -42,6 +45,7 @@ class PCRLogic:
 		assignment_map = {}
 		for assignment in assignments:
 			assignment_map[assignment] = process_assignment(assignment, aliquots, pcrs)
+		results = sorted(aliquots, key=lambda aliquot: get_bayesian_prob(aliquots.index(aliquot), assignment_map))
 
 	def prune_nondefective(aliquots, pcrs):
 		nondefectives = [pcr in pcrs if not pcr.had_defective_reagent()]
@@ -60,7 +64,20 @@ class PCRLogic:
 					return (prob, False)
 		return (prob, True)
 
-
+	def get_bayesian_prob(aliquot_index, assignment_map):
+		temp_list = [assignment_map[assign] for assign in assignment_map if assign[aliquotIndex]]
+		prob_defective = sum([tup[PROB_INDEX] for tup in temp_list])
+		prob_results_given_defective = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
+		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquotIndex]]
+		prob_fine = 1 - prob_defective
+		# Sanity check Start, remove in final build
+		prob_fine2 = sum([tup[PROB_INDEX] for tup in temp_list])
+		if prob_fine != prob_fine2:
+			sys.exit("Bayesian sanity check failed.")
+		# Sanity check End
+		prob_results_given_fine = sum([tup[PROB_INDEX for tup in temp_list if tup[FIT_INDEX]]])
+		bayes_numerator = prob_results_given_defective * prob_defective
+		return bayes_numerator / (bayes_numerator * prob_fine * prob_results_given_fine)
 
 	def get_defective_prob(index, aliquots):
 		return 0.5
