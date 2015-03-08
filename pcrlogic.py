@@ -43,8 +43,10 @@ class PCRLogic:
 		assignments = [tup for tup in itertools.product([False, True], repeat = len(aliquots))]
 		assignment_map = {}
 		for assignment in assignments:
-			assignment_map[assignment] = process_assignment(assignment, aliquots, pcrs)
-		results = sorted(aliquots, key=lambda aliquot: get_bayesian_prob(aliquots.index(aliquot), assignment_map))
+			assignment_map[assignment] = self.process_assignment(assignment, aliquots, pcrs)
+		results = [(aliquots[i].reagent, aliquots[i].id, self.get_bayesian_prob(i, assignment_map)) for i in range(len(aliquots))]
+		results.sort(reverse=True)
+		return results
 
 	def prune_nondefective(self, aliquots, pcrs):
 		nondefectives = [pcr for pcr in pcrs if not pcr.had_defective_reagent()]
@@ -59,24 +61,24 @@ class PCRLogic:
 		defective_aliquots = set([aliquots[i] for i in range(len(assignment)) if assignment[i]])
 		defective_pcrs_aliquots = [set(pcr.aliquots) for pcr in pcrs if pcr.had_defective_reagent()]
 		for defective_pcr_aliquots in defective_pcrs_aliquots:
-			if defective_pcr_aliquots.intersection(defective_aliquots):
+			if not defective_pcr_aliquots.intersection(defective_aliquots):
 				return (prob, False)
 		return (prob, True)
 
-	def get_bayesian_prob(aliquot_index, assignment_map):
-		temp_list = [assignment_map[assign] for assign in assignment_map if assign[aliquotIndex]]
+	def get_bayesian_prob(self, aliquot_index, assignment_map):
+		temp_list = [assignment_map[assign] for assign in assignment_map if assign[aliquot_index]]
 		prob_defective = sum([tup[PROB_INDEX] for tup in temp_list])
 		prob_results_given_defective = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
-		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquotIndex]]
+		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquot_index]]
 		prob_fine = 1 - prob_defective
 		# Sanity check Start, remove in final build
 		prob_fine2 = sum([tup[PROB_INDEX] for tup in temp_list])
 		if prob_fine != prob_fine2:
 			sys.exit("Bayesian sanity check failed.")
 		# Sanity check End
-		prob_results_given_fine = sum([tup[PROB_INDEX for tup in temp_list if tup[FIT_INDEX]]])
+		prob_results_given_fine = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
 		bayes_numerator = prob_results_given_defective * prob_defective
-		return bayes_numerator / (bayes_numerator * prob_fine * prob_results_given_fine)
+		return bayes_numerator / (bayes_numerator + prob_fine * prob_results_given_fine)
 
 	def get_defective_prob(self, index, aliquots):
 		return 0.5
