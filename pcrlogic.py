@@ -45,7 +45,7 @@ class PCRLogic:
 		for assignment in assignments:
 			assignment_map[assignment] = self.process_assignment(assignment, aliquots, pcrs)
 		results = [(aliquots[i].reagent, aliquots[i].id, self.get_bayesian_prob(i, assignment_map)) for i in range(len(aliquots))]
-		results.sort(reverse=True)
+		results.sort(key=lambda x:x[2], reverse=True)
 		return results
 
 	def prune_nondefective(self, aliquots, pcrs):
@@ -70,10 +70,10 @@ class PCRLogic:
 		prob_results_given_defective = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
 		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquot_index]]
 		prob_results_given_fine = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
-		return prob_results_given_defective / (prob_results_given_defective * prob_results_given_fine)
+		return prob_results_given_defective / (prob_results_given_defective + prob_results_given_fine)
 
 	def get_defective_prob(self, index, aliquots):
-		return 0.5
+		return 0.1
 	
 	def find_defective_aliquots(self, pcr):
 		# Start out with all the aliquots as defective candidates

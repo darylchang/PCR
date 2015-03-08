@@ -128,14 +128,21 @@ def test_probabilistic_deductions():
 	taq1 = Aliquot(TAQ, '1', 'Biowares')
 	dntp1 = Aliquot(DNTP, '1', 'Biowares')
 	buffer1 = Aliquot(BUFFER, '1', 'Biowares')
-	pcr = PCR(True, False, [primer1, taq1, dntp1, buffer1])
+	pcr = PCR(False, False, [primer1, taq1, dntp1, buffer1])
 	db.add_pcr(pcr)
 
 	buffer2 = Aliquot(BUFFER, '2', 'Biowares')
-	taq2 = Aliquot(TAQ, '2', 'Biowares')
-	pcr2 = PCR(False, False, [primer1, taq2, dntp1, buffer2])
+	pcr2 = PCR(False, False, [primer1, taq1, dntp1, buffer2])
 	db.add_pcr(pcr2)
-	
+
+	buffer3 = Aliquot(BUFFER, '3', 'Biowares')
+	pcr3 = PCR(False, False, [primer1, taq1, dntp1, buffer3])
+	db.add_pcr(pcr3)
+
+	buffer4 = Aliquot(BUFFER, '4', 'Biowares')
+	pcr4 = PCR(False, False, [primer1, taq1, dntp1, buffer4])
+	db.add_pcr(pcr4)
+
 	logic = PCRLogic(db)
 	possible_culprits = logic.make_probabilistic_deductions()
 	print possible_culprits
