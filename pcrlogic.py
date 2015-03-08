@@ -3,6 +3,7 @@
 from pcrclasses import *
 import copy
 import sys
+import itertools
 
 class PCRLogic:
 	def __init__(self, pcr_database):
@@ -27,6 +28,42 @@ class PCRLogic:
 		# If this PCR was neither a false positive nor a false negative, 
 		# return an empty list.  Nothing is wrong.
 		return list()
+
+	def make_probabilistic_deductions(self):
+		database = self.pcr_database
+		pcrs = database.pcrs
+		aliquots = list()
+		for pcr in pcrs:
+			aliquots.extend(pcr.aliquots)
+		aliquots = set(aliquots)
+		prune_nondefective(aliquots, pcrs)
+		aliquots = list(aliquots)
+		assignments = [tup for tup in itertools.product([False, True], repeat = len(aliquots))]
+		assignment_map = {}
+		for assignment in assignments:
+			assignment_map[assignment] = process_assignment(assignment, aliquots, pcrs)
+
+	def prune_nondefective(aliquots, pcrs):
+		nondefectives = [pcr in pcrs if not pcr.had_defective_reagent()]
+		for pcr in nondefectives:
+			aliquots.remove(set(pcr.aliquots))
+
+	def process_assignment(assignment, aliquots, pcrs):
+		prob = 1.0
+		for i in range(len(assignment)):
+			prob *= get_defective_prob(i, aliquots) if assignment[i] else 1 - get_defective_prob(i, aliquots)
+		defective_aliquots = set([aliquots[i] for i in range(len(assignment)) if assignment[i]])
+		for pcr in pcrs:
+			if pcr.had_defective_reagent():
+				pcr_aliquots = set(pcr.aliquots)
+				if len(defective_aliquots.intersection(pcr_aliquots)) == 0:
+					return (prob, False)
+		return (prob, True)
+
+
+
+	def get_defective_prob(index, aliquots):
+		return 0.5
 	
 	def find_defective_aliquots(self, pcr):
 		# Start out with all the aliquots as defective candidates
