@@ -38,8 +38,7 @@ class PCRLogic:
 		for error in errors:
 			# Create a list of aliquots that may have been bad
 			pcrs = self.pcr_database.pcrs
-			aliquots = [pcr.aliquots for pcr in pcrs]
-			aliquots = set([i for i in itertools.chain.from_iterable(aliquots)])
+			aliquots = self.pcr_database.get_all_aliquots()
 			aliquots = list(self.prune_aliquots(aliquots, pcrs, error))
 
 			# Create all possible aliquot assignments of defective/non-defective
