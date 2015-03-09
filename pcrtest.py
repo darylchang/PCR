@@ -12,8 +12,6 @@ def main():
 	test_no_deduction_possible()
 	test_basic_contamination()
 	test_basic_defective()
-	test_probabilistic_deductions_defective()
-	test_probabilistic_deductions_contaminated()
 
 """
 In this test case, we have one perfect PCR in our database.  We want to make deductions
@@ -120,61 +118,7 @@ def test_perfect_pcr():
 	else:
 		print 'Perfect PCR test FAILED!'
 	
-"""
-This tests the probabilistic PSM in PCRLogic.
-"""
-def test_probabilistic_deductions_defective():
-	db = PCRDatabase()
-	primer1 = Aliquot(PRIMER, '1', 'Biowares')
-	taq1 = Aliquot(TAQ, '1', 'Biowares')
-	dntp1 = Aliquot(DNTP, '1', 'Biowares')
-	buffer1 = Aliquot(BUFFER, '1', 'Biowares')
-	pcr = PCR(False, False, [primer1, taq1, dntp1, buffer1])
-	db.add_pcr(pcr)
 
-	buffer2 = Aliquot(BUFFER, '2', 'Biowares')
-	pcr2 = PCR(False, False, [primer1, taq1, dntp1, buffer2])
-	db.add_pcr(pcr2)
-
-	buffer3 = Aliquot(BUFFER, '3', 'Biowares')
-	pcr3 = PCR(False, False, [primer1, taq1, dntp1, buffer3])
-	db.add_pcr(pcr3)
-
-	buffer4 = Aliquot(BUFFER, '4', 'Biowares')
-	pcr4 = PCR(False, False, [primer1, taq1, dntp1, buffer4])
-	db.add_pcr(pcr4)
-
-	logic = PCRLogic(db)
-	possible_culprits = logic.make_probabilistic_deductions()
-	print possible_culprits
-
-"""
-This tests the probabilistic PSM in PCRLogic.
-"""
-def test_probabilistic_deductions_contaminated():
-	db = PCRDatabase()
-	primer1 = Aliquot(PRIMER, '1', 'Biowares')
-	taq1 = Aliquot(TAQ, '1', 'Biowares')
-	dntp1 = Aliquot(DNTP, '1', 'Biowares')
-	buffer1 = Aliquot(BUFFER, '1', 'Biowares')
-	pcr = PCR(True, True, [primer1, taq1, dntp1, buffer1])
-	db.add_pcr(pcr)
-
-	buffer2 = Aliquot(BUFFER, '2', 'Biowares')
-	pcr2 = PCR(True, True, [primer1, taq1, dntp1, buffer2])
-	db.add_pcr(pcr2)
-
-	buffer3 = Aliquot(BUFFER, '3', 'Biowares')
-	pcr3 = PCR(True, True, [primer1, taq1, dntp1, buffer3])
-	db.add_pcr(pcr3)
-
-	buffer4 = Aliquot(BUFFER, '4', 'Biowares')
-	pcr4 = PCR(True, True, [primer1, taq1, dntp1, buffer4])
-	db.add_pcr(pcr4)
-
-	logic = PCRLogic(db)
-	possible_culprits = logic.make_probabilistic_deductions()
-	print possible_culprits
 
 if __name__ == "__main__":
     main()
