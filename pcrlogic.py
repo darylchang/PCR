@@ -47,8 +47,9 @@ class PCRLogic:
 			assignment_map = {}
 			for assignment in assignments:
 				assignment_map[assignment] = self.process_assignment(assignment, aliquots, pcrs, error)
-			aliquot_results = [(aliquots[i].reagent, aliquots[i].id, self.get_bayesian_prob(i, assignment_map)) for i in range(len(aliquots))]
-			aliquot_results.sort(key=lambda x:x[2], reverse=True)
+			aliquot_results = [(aliquots[i], self.get_bayesian_prob(i, assignment_map)) \
+							   for i in range(len(aliquots))]
+			aliquot_results.sort(key=lambda x:x[1], reverse=True)
 			results[error] = aliquot_results
 		return results
 

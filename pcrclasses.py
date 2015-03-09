@@ -12,6 +12,8 @@ BUFFER = 3
 BIVALENT_CATION = 4
 MONOVALENT_CATION = 5
 
+REAGENT_MAP = {0: 'PRIMER', 1: 'TAQ', 2: 'DNTP', 3: 'BUFFER', 4: 'BIVALENT_CATION', 5: 'MONOVALENT_CATION'}
+
 class PCR:
 	def __init__(self, pos_control_result, negative_control_result, aliquots):
 		if pos_control_result == False and negative_control_result == True:
@@ -39,10 +41,11 @@ class PCR:
 	
 	
 class Aliquot:
-	def __init__(self, reagent, id, manufacturer):
+	def __init__(self, reagent, id, manufacturer, state=None):
 		self.id = id
 		self.manufacturer = manufacturer
 		self.reagent = reagent
+		self.state = state
 	
 	def is_same_aliquot(self, other):
 		return self.reagent == other.reagent and self.id == other.id and self.manufacturer == other.manufacturer
