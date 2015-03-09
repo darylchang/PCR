@@ -41,10 +41,11 @@ class PCR:
 	
 	
 class Aliquot:
-	def __init__(self, reagent, id, manufacturer):
+	def __init__(self, reagent, id, manufacturer, state=None):
 		self.id = id
 		self.manufacturer = manufacturer
 		self.reagent = reagent
+		self.state = state
 	
 	def is_same_aliquot(self, other):
 		return self.reagent == other.reagent and self.id == other.id and self.manufacturer == other.manufacturer
