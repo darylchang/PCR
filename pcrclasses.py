@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import sys
+import itertools, sys
 import csv
 
 """
@@ -83,6 +83,10 @@ class PCRDatabase:
 	
 	def add_pcr(self, pcr):
 		self.pcrs.append(pcr)
+	
+	def get_all_aliquots(self):
+		aliquots = [pcr.aliquots for pcr in self.pcrs]
+		return set([i for i in itertools.chain.from_iterable(aliquots)])
 		
 	def pcrs_with_aliquot(self, aliquot):
 		pcrs = list()
@@ -95,6 +99,3 @@ class PCRDatabase:
 					break
 		return pcrs	
 	
-
-    
-
