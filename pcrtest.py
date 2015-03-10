@@ -9,14 +9,18 @@ TODO (maesen): This test suite could use a lot of beefing up.
 
 
 def main():
-	test_illegal_pcr()
+	"""test_illegal_pcr()
 	test_perfect_pcr()
 	test_no_deduction_possible()
 	test_basic_contamination()
 	test_basic_defective()
 	test_probabilistic_deductions_defective()
 	test_probabilistic_deductions_contaminated()
-	simulate_pcrs(100)
+	simulate_pcrs(100)"""
+	test_db_instantiation()
+	
+def test_db_instantiation():
+	db = PCRDatabase('example_database.txt')
 
 """
 In this test case, we have one perfect PCR in our database.  We want to make deductions
