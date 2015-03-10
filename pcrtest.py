@@ -21,6 +21,7 @@ def main():
 	
 def test_db_instantiation():
 	db = PCRDatabase('example_database.txt')
+	print db.error_probs
 
 """
 In this test case, we have one perfect PCR in our database.  We want to make deductions

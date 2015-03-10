@@ -27,3 +27,7 @@ PRIMER	primer1	Biowares
 TAQ	taq1	Biowares
 DNTP	dntp1	Biowares
 BUFFER	buffer2	Biowares
+
+defective DNTP Biowares 0.05
+defective PRIMER Biowares 0.1
+contaminated PRIMER Biowares 0.2

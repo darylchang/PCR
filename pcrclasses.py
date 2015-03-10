@@ -55,9 +55,13 @@ class Aliquot:
 class PCRDatabase:
 	def __init__(self):
 		self.pcrs = list()
+		self.error_probs = dict()
 		
 	def __init__(self, filename):
 		self.pcrs = list()
+		# Error probabilities is a dictionary of (error, reagent, manufacturer) => prob.
+		# Users supply any probabilities they can estimate.  The default probability is 0.1.
+		self.error_probs = dict()
 		f = open(filename, 'r')
 		n_pcrs = int(f.readline())
 		# Throw away hard return
@@ -73,8 +77,18 @@ class PCRDatabase:
 				line = f.readline()
 			pcr = PCR(pos_control_result, neg_control_result, aliquots)
 			self.add_pcr(pcr)
-		# TODO: parse some probabilities.
+		for line in f:
+			[error, r_tag, manufacturer, prob] = line.split()
+			self.error_probs[(error, REVERSE_REAGENT_MAP[r_tag], manufacturer)] = float(prob)
 		
+	def get_error_prob(self, aliquot, error):
+		if (error, aliquot.reagent, aliquot.manufacturer) in error_probs:
+			return error_probs[(error, aliquot.reagent, aliquot.manufacturer)]
+		elif error == 'defective':
+			return 0.1
+		elif error == 'contaminated':
+			return 0.1
+	
 	def parse_reagent_line(self, words):
 		reagent = REVERSE_REAGENT_MAP[words[0]]
 		id = words[1]
