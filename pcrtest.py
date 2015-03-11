@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import math, random, sys
+from matplotlib import pyplot
 from pcrlogic import PCRLogic
 from pcrclasses import *
 """
@@ -16,7 +17,7 @@ def main():
 # 	test_basic_defective()
 # 	test_probabilistic_deductions_defective()
 # 	test_probabilistic_deductions_contaminated()
-	simulate_pcrs(10, 10)
+	simulate_pcrs()
 #	simulate_pcrs(10, 10)
 	test_db_instantiation()
 	
@@ -134,54 +135,110 @@ def test_perfect_pcr():
 """
 Simulates PCRs and evaluates cost.
 """
-def simulate_pcrs(num_experiments, num_pcrs):
+def simulate_pcrs():
+    num_experiments = 100
+    range_num_pcrs = [3, 4, 5, 6, 7, 8, 9, 10]
     state_probabilities = {'contaminated': 0.04, 'defective': 0.04, 'good': 0.92}
-    errors = []
-    naive_errors = []
+    y = []
+    naive_y = []
 
-    for i in range(num_experiments):
-        db = PCRDatabase()
-        logic = PCRLogic(db)
-        curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
-        
-        for j in range(num_pcrs):
-            false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
-            false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
-            
-            if false_neg:
-                pcr = PCR(False, False, curr_aliquots)
-            elif false_pos:
-                pcr = PCR(True, True, curr_aliquots)
-            else:
-                pcr = PCR(True, False, curr_aliquots)
-            db.add_pcr(pcr)
-            
-            # Randomly choose new aliquot
-            for i in range(len(curr_aliquots)):
-                old_aliquot = curr_aliquots[i]
-                new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
-                aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
-                curr_aliquots[i] = choose(aliquot_probabilities)
+    for num_pcrs in range_num_pcrs:
+        errors = []
+        naive_errors = []
 
-        # Compute the defective and contaminated aliquot probabilities
-        deductions = logic.make_probabilistic_deductions()
-        all_aliquots = db.get_all_aliquots()
-        errors.append(rmse(all_aliquots, deductions))
+        for i in range(num_experiments):
+	        db = PCRDatabase()
+	        logic = PCRLogic(db)
+	        curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
+	        
+	        for j in range(num_pcrs):
+	            false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
+	            false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
+	            
+	            if false_neg:
+	                pcr = PCR(False, False, curr_aliquots)
+	            elif false_pos:
+	                pcr = PCR(True, True, curr_aliquots)
+	            else:
+	                pcr = PCR(True, False, curr_aliquots)
+	            db.add_pcr(pcr)
+	            
+	            # Randomly choose new aliquot
+	            for i in range(len(curr_aliquots)):
+	                old_aliquot = curr_aliquots[i]
+	                new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
+	                aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
+	                curr_aliquots[i] = choose(aliquot_probabilities)
 
-        # Compute naive approach errors
-        naive_deductions = dict(deductions)
-        for error in naive_deductions:
-        	prob_list = naive_deductions[error]
-        	for i in range(len(prob_list)):
-        		prob_list[i] = 1.0
-        naive_errors.append(rmse(all_aliquots, naive_deductions))
-        
-        print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
+	        # Compute the defective and contaminated aliquot probabilities
+	        deductions = logic.make_probabilistic_deductions()
+	        all_aliquots = db.get_all_aliquots()
+	        errors.append(rmse(all_aliquots, deductions))
+
+	        # Compute naive approach errors
+	        naive_deductions = dict(deductions)
+	        for error in naive_deductions:
+	        	prob_list = naive_deductions[error]
+	        	for i in range(len(prob_list)):
+	        		prob_list[i] = (prob_list[i][0], 1.0)
+	        naive_errors.append(rmse(all_aliquots, naive_deductions))
+	        
+	        print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
+	    
+        avg_error = sum(errors) / len(errors)
+        avg_naive_error = sum(naive_errors) / len(naive_errors)
+        y.append(avg_error)
+        naive_y.append(avg_naive_error)
+
+    print y
+    print naive_y
+
+    pyplot.plot(range_num_pcrs, y, label='Bayesian inference')
+    pyplot.plot(range_num_pcrs, naive_y, label='Naive approach')
+    pyplot.legend()
+    pyplot.xlabel('Number of PCRs in a set')
+    pyplot.ylabel('RMSE')
+    pyplot.show()
+
+def simulate_pcrs_with_heatmap():
+    num_pcrs = 10
+    state_probabilities = {'contaminated': 0.04, 'defective': 0.04, 'good': 0.92}
+
+    db = PCRDatabase()
+    logic = PCRLogic(db)
+    curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
     
-    avg_error = sum(errors) / len(errors)
-    avg_naive_error = sum(naive_errors) / len(naive_errors)
-    print avg_error
-    print avg_naive_error
+    for j in range(num_pcrs):
+        false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
+        false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
+        
+        if false_neg:
+            pcr = PCR(False, False, curr_aliquots)
+        elif false_pos:
+            pcr = PCR(True, True, curr_aliquots)
+        else:
+            pcr = PCR(True, False, curr_aliquots)
+        db.add_pcr(pcr)
+        
+        # Randomly choose new aliquot
+        for i in range(len(curr_aliquots)):
+            old_aliquot = curr_aliquots[i]
+            new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
+            aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
+            curr_aliquots[i] = choose(aliquot_probabilities)
+
+    # Compute the defective and contaminated aliquot probabilities
+    deductions = logic.make_probabilistic_deductions()
+    all_aliquots = db.get_all_aliquots()
+
+    # Compute naive approach errors
+    naive_deductions = dict(deductions)
+    for error in naive_deductions:
+        prob_list = naive_deductions[error]
+        for i in range(len(prob_list)):
+            prob_list[i] = (prob_list[i][0], 1.0)
+    
+    print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
 
 def rmse(aliquots, deductions):
     results = []

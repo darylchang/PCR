@@ -41,14 +41,17 @@ class PCRLogic:
 			aliquots = self.pcr_database.get_all_aliquots()
 			aliquots = list(self.prune_aliquots(aliquots, pcrs, error))
 
-			# Create all possible aliquot assignments of defective/non-defective
-			assignments = [tup for tup in itertools.product([False, True], repeat = len(aliquots))]
-			assignment_map = {}
-			for assignment in assignments:
-				assignment_map[assignment] = self.process_assignment(assignment, aliquots, pcrs, error)
-			aliquot_results = [(aliquots[i], self.get_bayesian_prob(i, assignment_map)) \
-							   for i in range(len(aliquots))]
-			aliquot_results.sort(key=lambda x:x[1], reverse=True)
+			if not aliquots:
+				aliquot_results = []
+			else:
+				# Create all possible aliquot assignments of defective/non-defective
+				assignments = [tup for tup in itertools.product([False, True], repeat = len(aliquots))]
+				assignment_map = {}
+				for assignment in assignments:
+					assignment_map[assignment] = self.process_assignment(assignment, aliquots, pcrs, error)
+				aliquot_results = [(aliquots[i], self.get_bayesian_prob(i, assignment_map)) \
+								   for i in range(len(aliquots))]
+				aliquot_results.sort(key=lambda x:x[1], reverse=True)
 			results[error] = aliquot_results
 		return results
 
@@ -74,7 +77,9 @@ class PCRLogic:
 		prob_results_given_error = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
 		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquot_index]]
 		prob_results_given_fine = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
-		return prob_results_given_error / (prob_results_given_error + prob_results_given_fine)
+		prob_results = prob_results_given_error / (prob_results_given_error + prob_results_given_fine) \
+					   if prob_results_given_error and prob_results_given_fine else 0. 
+		return prob_results
 
 	"""
 	TODO: Take into account the manufacturer of the aliquot here?
