@@ -137,6 +137,7 @@ Simulates PCRs and evaluates cost.
 def simulate_pcrs(num_experiments, num_pcrs):
     state_probabilities = {'contaminated': 0.04, 'defective': 0.04, 'good': 0.92}
     errors = []
+    naive_errors = []
 
     for i in range(num_experiments):
         db = PCRDatabase()
@@ -166,10 +167,19 @@ def simulate_pcrs(num_experiments, num_pcrs):
         deductions = logic.make_probabilistic_deductions()
         all_aliquots = db.get_all_aliquots()
         errors.append(rmse(all_aliquots, deductions))
+
+        # Compute naive approach errors
+        naive_deductions = dict(deductions)
+        for error in naive_deductions:
+        	prob_list = naive_deductions[error]
+        	for i in range(len(prob_list)):
+        		prob_list[i] = 1.0
+        naive_errors.append(rmse(all_aliquots, naive_deductions))
         
         print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
     
     print sum(errors) / len(errors)
+    print sum(naive_errors) / len(naive_errors)
 
 def rmse(aliquots, deductions):
     results = []
