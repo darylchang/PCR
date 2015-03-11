@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-import sys
+import itertools, sys
+import csv
 
 """
 This is really fragile. 
@@ -13,6 +14,7 @@ BIVALENT_CATION = 4
 MONOVALENT_CATION = 5
 
 REAGENT_MAP = {0: 'PRIMER', 1: 'TAQ', 2: 'DNTP', 3: 'BUFFER', 4: 'BIVALENT_CATION', 5: 'MONOVALENT_CATION'}
+REVERSE_REAGENT_MAP = {'PRIMER': 0, 'TAQ': 1, 'DNTP': 2, 'BUFFER': 3, 'BIVALENT_CATION': 4, 'MONOVALENT_CATION': 5}
 
 class PCR:
 	def __init__(self, pos_control_result, negative_control_result, aliquots):
@@ -53,9 +55,52 @@ class Aliquot:
 class PCRDatabase:
 	def __init__(self):
 		self.pcrs = list()
+		self.error_probs = dict()
 		
+	def __init__(self, filename):
+		self.pcrs = list()
+		# Error probabilities is a dictionary of (error, reagent, manufacturer) => prob.
+		# Users supply any probabilities they can estimate.  The default probability is 0.1.
+		self.error_probs = dict()
+		f = open(filename, 'r')
+		n_pcrs = int(f.readline())
+		# Throw away hard return
+		f.readline()
+		for i in range(n_pcrs):
+			pos_control_result = f.readline() == 'True'
+			neg_control_result = f.readline() == 'True'
+			aliquots = list()
+			line = f.readline()
+			while len(line.strip()) != 0:
+				aliquot = self.parse_reagent_line(line.split())
+				aliquots.append(aliquot)
+				line = f.readline()
+			pcr = PCR(pos_control_result, neg_control_result, aliquots)
+			self.add_pcr(pcr)
+		for line in f:
+			[error, r_tag, manufacturer, prob] = line.split()
+			self.error_probs[(error, REVERSE_REAGENT_MAP[r_tag], manufacturer)] = float(prob)
+		
+	def get_error_prob(self, aliquot, error):
+		if (error, aliquot.reagent, aliquot.manufacturer) in error_probs:
+			return error_probs[(error, aliquot.reagent, aliquot.manufacturer)]
+		elif error == 'defective':
+			return 0.1
+		elif error == 'contaminated':
+			return 0.1
+	
+	def parse_reagent_line(self, words):
+		reagent = REVERSE_REAGENT_MAP[words[0]]
+		id = words[1]
+		manufacturer = words[2]
+		return Aliquot(reagent, id, manufacturer)
+	
 	def add_pcr(self, pcr):
 		self.pcrs.append(pcr)
+	
+	def get_all_aliquots(self):
+		aliquots = [pcr.aliquots for pcr in self.pcrs]
+		return set([i for i in itertools.chain.from_iterable(aliquots)])
 		
 	def pcrs_with_aliquot(self, aliquot):
 		pcrs = list()
@@ -68,6 +113,3 @@ class PCRDatabase:
 					break
 		return pcrs	
 	
-
-    
-

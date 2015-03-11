@@ -38,8 +38,7 @@ class PCRLogic:
 		for error in errors:
 			# Create a list of aliquots that may have been bad
 			pcrs = self.pcr_database.pcrs
-			aliquots = [pcr.aliquots for pcr in pcrs]
-			aliquots = set([i for i in itertools.chain.from_iterable(aliquots)])
+			aliquots = self.pcr_database.get_all_aliquots()
 			aliquots = list(self.prune_aliquots(aliquots, pcrs, error))
 
 			# Create all possible aliquot assignments of defective/non-defective
@@ -77,11 +76,11 @@ class PCRLogic:
 		prob_results_given_fine = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
 		return prob_results_given_error / (prob_results_given_error + prob_results_given_fine)
 
+	"""
+	TODO: Take into account the manufacturer of the aliquot here?
+	"""
 	def get_error_prob(self, index, aliquots, error):
-		if error == 'defective':
-			return 0.1
-		elif error == 'contaminated':
-			return 0.1
+		return self.database.get_error_prob(aliquots[index], error)
 	
 	def find_defective_aliquots(self, pcr):
 		# Start out with all the aliquots as defective candidates

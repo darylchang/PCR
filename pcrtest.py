@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import random, sys
+import math, random, sys
 from pcrlogic import PCRLogic
 from pcrclasses import *
 """
@@ -9,14 +9,19 @@ TODO (maesen): This test suite could use a lot of beefing up.
 
 
 def main():
-	test_illegal_pcr()
-	test_perfect_pcr()
-	test_no_deduction_possible()
-	test_basic_contamination()
-	test_basic_defective()
-	test_probabilistic_deductions_defective()
-	test_probabilistic_deductions_contaminated()
-	simulate_pcrs(100)
+# 	test_illegal_pcr()
+# 	test_perfect_pcr()
+# 	test_no_deduction_possible()
+# 	test_basic_contamination()
+# 	test_basic_defective()
+# 	test_probabilistic_deductions_defective()
+# 	test_probabilistic_deductions_contaminated()
+#	simulate_pcrs(10, 10)
+	test_db_instantiation()
+	
+def test_db_instantiation():
+	db = PCRDatabase('example_database.txt')
+	print db.error_probs
 
 """
 In this test case, we have one perfect PCR in our database.  We want to make deductions
@@ -128,41 +133,54 @@ def test_perfect_pcr():
 """
 Simulates PCRs and evaluates cost.
 """
-def simulate_pcrs(num_pcrs):
-    db = PCRDatabase()
-    logic = PCRLogic(db)
-    state_probabilities = {'contaminated': 0.05, 'defective': 0.05, 'good': 0.9}
-    curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
+def simulate_pcrs(num_experiments, num_pcrs):
+    state_probabilities = {'contaminated': 0.04, 'defective': 0.04, 'good': 0.92}
+    errors = []
 
-    for i in range(num_pcrs):
-        false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
-        false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
-        if false_neg:
-            pcr = PCR(False, False, curr_aliquots)
-        elif false_pos:
-            pcr = PCR(True, True, curr_aliquots)
-        else:
-            pcr = PCR(True, False, curr_aliquots)
-        db.add_pcr(pcr)
-        curr_aliquots = [random.choice([aliquot, Aliquot(aliquot.reagent, aliquot.id+1, aliquot.manufacturer, random.choice(['c', 'd', 'g']))]) \
-                        for aliquot in curr_aliquots]
-        # defective_aliquots = set(filter(lambda x:x>0.1, logic.make_probabilistic_deductions()['defective']))
-        # contaminated_aliquots = filter(lambda x:x>0.1, logic.make_probabilistic_deductions()['contaminated'])
-        # bad_aliquots = defective_aliquots.union(contaminated_aliquots)
-        # curr_aliquots = [aliquot if aliquot not in bad_aliquots else Aliquot(aliquot.reagent, aliquot.id+1, aliquot.manufacturer, choose(state_probabilities)) \
-        #                  for aliquot in curr_aliquots]
+    for i in range(num_experiments):
+        db = PCRDatabase()
+        logic = PCRLogic(db)
+        curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
+        
+        for j in range(num_pcrs):
+            false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
+            false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
+            
+            if false_neg:
+                pcr = PCR(False, False, curr_aliquots)
+            elif false_pos:
+                pcr = PCR(True, True, curr_aliquots)
+            else:
+                pcr = PCR(True, False, curr_aliquots)
+            db.add_pcr(pcr)
+            
+            # Randomly choose new aliquot
+            for i in range(len(curr_aliquots)):
+                old_aliquot = curr_aliquots[i]
+                new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
+                aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
+                curr_aliquots[i] = choose(aliquot_probabilities)
 
-    print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
-    print score(db)
+        # Compute the defective and contaminated aliquot probabilities
+        deductions = logic.make_probabilistic_deductions()
+        all_aliquots = db.get_all_aliquots()
+        errors.append(rmse(all_aliquots, deductions))
+        
+        print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
     
-"""
-TODO: 
-"""
-def score(db):
-    percent_clean = sum([float(pcr.pos_control_result == True and pcr.negative_control_result == False) for pcr in db.pcrs]) / len(db.pcrs)
-    num_aliquots = len(set([aliquot for pcr in db.pcrs for aliquot in pcr.aliquots])) / len(REAGENT_MAP)
-    avg_num_aliquots = num_aliquots / len(db.pcrs)
-    return (percent_clean + avg_num_aliquots) / 2
+    print sum(errors) / len(errors)
+
+def rmse(aliquots, deductions):
+    results = []
+    for error in ['defective', 'contaminated']:
+        squared_errors = []
+        for aliquot in aliquots:
+            deduced_probability = dict(deductions[error]).get(aliquot, 0.0)
+            true_probability = float(aliquot.state == error)
+            squared_errors.append(abs(deduced_probability - true_probability) ** 2)
+        results.append(math.sqrt(sum(squared_errors) / len(squared_errors)))
+    return sum(results) / len(results)
+        
 			
 def choose(d):
     r = random.uniform(0, sum(d.itervalues()))
@@ -171,6 +189,12 @@ def choose(d):
         s += w
         if r < s: return k
     return k
+    
+# def score(db):
+#     percent_clean = sum([float(pcr.pos_control_result == True and pcr.negative_control_result == False) for pcr in db.pcrs]) / len(db.pcrs)
+#     num_aliquots = len(set([aliquot for pcr in db.pcrs for aliquot in pcr.aliquots])) / len(REAGENT_MAP)
+#     avg_num_aliquots = num_aliquots / len(db.pcrs)
+#     return (percent_clean + avg_num_aliquots) / 2
     
 if __name__ == "__main__":
     main()

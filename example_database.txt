@@ -1,0 +1,33 @@
+4
+
+True
+False
+PRIMER	primer1	Biowares
+TAQ	taq1	Biowares
+DNTP	dntp1	Biowares
+BUFFER	buffer1	Biowares
+
+True
+False
+PRIMER	primer2	Biowares
+TAQ	taq2	Biowares
+DNTP	dntp1	Biowares
+BUFFER	buffer1	Biowares
+
+True
+True
+PRIMER	primer2	Biowares
+TAQ	taq1	Biowares
+DNTP	dntp2	Biowares
+BUFFER	buffer1	Biowares
+
+False
+False
+PRIMER	primer1	Biowares
+TAQ	taq1	Biowares
+DNTP	dntp1	Biowares
+BUFFER	buffer2	Biowares
+
+defective DNTP Biowares 0.05
+defective PRIMER Biowares 0.1
+contaminated PRIMER Biowares 0.2
