@@ -16,12 +16,16 @@ def main():
 # 	test_basic_defective()
 # 	test_probabilistic_deductions_defective()
 # 	test_probabilistic_deductions_contaminated()
+<<<<<<< HEAD
+	simulate_pcrs(10, 10)
+=======
 #	simulate_pcrs(10, 10)
 	test_db_instantiation()
 	
 def test_db_instantiation():
 	db = PCRDatabase('example_database.txt')
 	print db.error_probs
+>>>>>>> 76a5710b352707f0464676f1e8dc1f46712621ff
 
 """
 In this test case, we have one perfect PCR in our database.  We want to make deductions

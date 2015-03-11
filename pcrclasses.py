@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import itertools, sys
+<<<<<<< HEAD
+=======
 import csv
+>>>>>>> 76a5710b352707f0464676f1e8dc1f46712621ff
 
 """
 This is really fragile. 
