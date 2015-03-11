@@ -80,7 +80,7 @@ class PCRLogic:
 	TODO: Take into account the manufacturer of the aliquot here?
 	"""
 	def get_error_prob(self, index, aliquots, error):
-		return self.database.get_error_prob(aliquots[index], error)
+		return self.pcr_database.get_error_prob(aliquots[index], error)
 	
 	def find_defective_aliquots(self, pcr):
 		# Start out with all the aliquots as defective candidates

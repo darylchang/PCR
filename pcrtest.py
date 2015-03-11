@@ -178,8 +178,10 @@ def simulate_pcrs(num_experiments, num_pcrs):
         
         print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
     
-    print sum(errors) / len(errors)
-    print sum(naive_errors) / len(naive_errors)
+    avg_error = sum(errors) / len(errors)
+    avg_naive_error = sum(naive_errors) / len(naive_errors)
+    print avg_error
+    print avg_naive_error
 
 def rmse(aliquots, deductions):
     results = []
