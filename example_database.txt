@@ -1,33 +1,82 @@
-4
+11
+
+False
+False
+PRIMER	primer1	NewEnglandBiolabs
+TAQ	taq1	HadlyLab
+DNTP	dntp1	AligentTech
+BUFFER	buffer1	LifeTech
 
 True
 False
-PRIMER	primer1	Biowares
-TAQ	taq1	Biowares
-DNTP	dntp1	Biowares
-BUFFER	buffer1	Biowares
-
-True
-False
-PRIMER	primer2	Biowares
+PRIMER	primer2	NewEnglandBiolabs
 TAQ	taq2	Biowares
-DNTP	dntp1	Biowares
-BUFFER	buffer1	Biowares
+DNTP	dntp1	AligentTech
+BUFFER	buffer1	LifeTech
 
 True
-True
-PRIMER	primer2	Biowares
-TAQ	taq1	Biowares
-DNTP	dntp2	Biowares
-BUFFER	buffer1	Biowares
+False
+PRIMER	primer2	NewEnglandBiolabs
+TAQ	taq2	Biowares
+DNTP	dntp2	AligentTech
+BUFFER	buffer1	LifeTech
 
 False
 False
-PRIMER	primer1	Biowares
-TAQ	taq1	Biowares
-DNTP	dntp1	Biowares
-BUFFER	buffer2	Biowares
+PRIMER	primer1	NewEnglandBiolabs
+TAQ	taq1	HadlyLab
+DNTP	dntp1	AligentTech
+BUFFER	buffer2	LifeTech
 
-defective DNTP Biowares 0.05
-defective PRIMER Biowares 0.1
-contaminated PRIMER Biowares 0.2
+True
+False
+PRIMER	primer2	NewEnglandBiolabs
+TAQ	taq2	Biowares
+DNTP	dntp3	BioRad
+BUFFER	buffer3	GenScript
+
+True
+True
+PRIMER	primer3	NewEnglandBiolabs
+TAQ	taq2	Biowares
+DNTP	dntp4	BioRad
+BUFFER	buffer3	GenScript
+
+True
+True
+PRIMER	primer1	NewEnglandBiolabs
+TAQ	taq2	Biowares
+DNTP	dntp4	BioRad
+BUFFER	buffer4	GenScript
+
+False
+False
+PRIMER	primer1	NewEnglandBiolabs
+TAQ	taq1	HadlyLab
+DNTP	dntp4	BioRad
+BUFFER	buffer2	LifeTech
+
+True
+False
+PRIMER	primer4	Biowares
+TAQ	taq2	Biowares
+DNTP	dntp3	BioRad
+BUFFER	buffer3	GenScript
+
+True
+True
+PRIMER	primer3	NewEnglandBiolabs
+TAQ	taq2	Biowares
+DNTP	dntp2	AligentTech
+BUFFER	buffer3	GenScript
+
+True
+True
+PRIMER	primer4	Biowares
+TAQ	taq2	Biowares
+DNTP	dntp4	BioRad
+BUFFER	buffer4	GenScript
+
+defective TAQ HadlyLab 0.2
+defective TAQ Biowares 0.05
+contaminated BUFFER LifeTech 0.05

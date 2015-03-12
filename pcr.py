@@ -6,7 +6,7 @@ from pcrlogic import PCRLogic
 from pcrclasses import *
 
 COMMANDS = {'0' : 'Quit', '1' : 'Read PCR Database from File', '2' : 'Add new PCR', 
-	'3' : 'Detect Errors Deterministically', '4' : 'Detect Errors Probabalistically', '5' : 'Write PCR Database to File' }
+	'3' : 'Detect Errors Deterministically', '4' : 'Detect Errors Probabalistically', '5' : 'Write PCR Database to File', '6': 'Visualize Current Reagent Ontology' }
 
 def main():
 	db = PCRDatabase()
@@ -29,8 +29,22 @@ def process_command(command, db, logic):
 		return probabalistic_command(db, logic)
 	elif command == '5':
 		return write_db_file(db, logic)
+	elif command == '6':
+		return visualize_ontology(db, logic)
 	return db, logic
 	
+def visualize_ontology(db, logic):
+	for reagent in REAGENT_MAP:
+		manufacturers = set()
+		for pcr in db.pcrs:
+			for aliquot in pcr.aliquots:
+				if aliquot.reagent == reagent:
+					manufacturers.add(aliquot.manufacturer)
+		print REAGENT_MAP[reagent]
+		for manufacturer in manufacturers:
+			print '  ' + manufacturer + ' ' + REAGENT_MAP[reagent]
+	return db, logic
+
 def write_db_file(db, logic):
 	filename = raw_input('What filename would you like to write to? ')
 	
@@ -57,6 +71,7 @@ def probabalistic_command(db, logic):
 	print_reagent_probs('Possible defective aliquots: ', poss_defective_reagents)
 	print_reagent_probs('Possible contaminated aliquots: ', poss_contaminated_reagents)
 	return db, logic
+
 	
 def print_reagent_probs(prompt, aliquots):
 	print prompt
@@ -64,10 +79,14 @@ def print_reagent_probs(prompt, aliquots):
 		print REAGENT_MAP[aliquot.reagent] + '\t' + aliquot.id + '\t' + aliquot.manufacturer + '\t' + str(prob)
 	
 def deterministic_command(db, logic):
-	poss_defective_reagents, poss_contaminated_reagents = logic.make_deterministic_deductions()
-	print_reagents('Possible defective aliquots: ', poss_defective_reagents)
-	print_reagents('Possible contaminated aliquots: ', poss_contaminated_reagents)
-	return db, logic
+	try:
+		poss_defective_reagents, poss_contaminated_reagents = logic.make_deterministic_deductions()
+		print_reagents('Possible defective aliquots: ', poss_defective_reagents)
+		print_reagents('Possible contaminated aliquots: ', poss_contaminated_reagents)
+		return db, logic
+	except:
+		print 'Some results contradictory; could not make conclusions.'
+		return db, logic
 	
 def print_reagents(prompt, aliquots):
 	print prompt
