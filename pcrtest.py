@@ -20,9 +20,9 @@ def main():
 	# test_basic_defective()
 	# test_probabilistic_deductions_defective()
 	# test_probabilistic_deductions_contaminated()
-	# simulate_pcrs()
+    simulate_pcrs()
 	# test_db_instantiation()
-    simulate_pcrs_with_heatmap()
+    # simulate_pcrs_with_heatmap()
     # simulate_pcrs_with_probabilities()
 	
 def test_db_instantiation():
@@ -142,7 +142,7 @@ Simulates PCRs and evaluates cost.
 def simulate_pcrs():
     num_experiments = 100
     range_num_pcrs = range(1, 10)
-    state_probabilities = {'contaminated': 0.4, 'defective': 0.2, 'good': 0.4}
+    state_probabilities = {'contaminated': 0.04, 'defective': 0.04, 'good': 0.92}
     y = []
     naive_y = []
 
@@ -200,6 +200,7 @@ def simulate_pcrs():
     pyplot.plot(range_num_pcrs, y, label='Bayesian inference')
     pyplot.plot(range_num_pcrs, naive_y, label='Naive approach')
     pyplot.legend()
+    pyplot.title('RMSE as a function of number of PCRs in a set')
     pyplot.xlabel('Number of PCRs in a set')
     pyplot.ylabel('RMSE')
     pyplot.show()
