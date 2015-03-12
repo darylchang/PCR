@@ -1,6 +1,9 @@
 #!/usr/bin/python
 
 import math, random, sys
+import matplotlib
+import numpy as np
+from matplotlib import pyplot
 from pcrlogic import PCRLogic
 from pcrclasses import *
 """
@@ -9,15 +12,18 @@ TODO (maesen): This test suite could use a lot of beefing up.
 
 
 def main():
-# 	test_illegal_pcr()
-# 	test_perfect_pcr()
-# 	test_no_deduction_possible()
-# 	test_basic_contamination()
-# 	test_basic_defective()
-# 	test_probabilistic_deductions_defective()
-# 	test_probabilistic_deductions_contaminated()
-#	simulate_pcrs(10, 10)
-	test_db_instantiation()
+    matplotlib.rcParams.update({'font.size': 18})
+	# test_illegal_pcr()
+	# test_perfect_pcr()
+	# test_no_deduction_possible()
+	# test_basic_contamination()
+	# test_basic_defective()
+	# test_probabilistic_deductions_defective()
+	# test_probabilistic_deductions_contaminated()
+	# simulate_pcrs()
+	# test_db_instantiation()
+    simulate_pcrs_with_heatmap()
+    # simulate_pcrs_with_probabilities()
 	
 def test_db_instantiation():
 	db = PCRDatabase('example_database.txt')
@@ -128,101 +134,153 @@ def test_perfect_pcr():
 	else:
 		print 'Perfect PCR test FAILED!'
 	
-"""
-This tests the probabilistic PSM in PCRLogic.
-"""
-def test_probabilistic_deductions_defective():
-	db = PCRDatabase()
-	primer1 = Aliquot(PRIMER, '1', 'Biowares')
-	taq1 = Aliquot(TAQ, '1', 'Biowares')
-	dntp1 = Aliquot(DNTP, '1', 'Biowares')
-	buffer1 = Aliquot(BUFFER, '1', 'Biowares')
-	pcr = PCR(False, False, [primer1, taq1, dntp1, buffer1])
-	db.add_pcr(pcr)
 
-	buffer2 = Aliquot(BUFFER, '2', 'Biowares')
-	pcr2 = PCR(False, False, [primer1, taq1, dntp1, buffer2])
-	db.add_pcr(pcr2)
-
-	buffer3 = Aliquot(BUFFER, '3', 'Biowares')
-	pcr3 = PCR(False, False, [primer1, taq1, dntp1, buffer3])
-	db.add_pcr(pcr3)
-
-	buffer4 = Aliquot(BUFFER, '4', 'Biowares')
-	pcr4 = PCR(False, False, [primer1, taq1, dntp1, buffer4])
-	db.add_pcr(pcr4)
-
-	logic = PCRLogic(db)
-	possible_culprits = logic.make_probabilistic_deductions()
-	print possible_culprits
-
-"""
-This tests the probabilistic PSM in PCRLogic.
-"""
-def test_probabilistic_deductions_contaminated():
-	db = PCRDatabase()
-	primer1 = Aliquot(PRIMER, '1', 'Biowares')
-	taq1 = Aliquot(TAQ, '1', 'Biowares')
-	dntp1 = Aliquot(DNTP, '1', 'Biowares')
-	buffer1 = Aliquot(BUFFER, '1', 'Biowares')
-	pcr = PCR(True, True, [primer1, taq1, dntp1, buffer1])
-	db.add_pcr(pcr)
-
-	buffer2 = Aliquot(BUFFER, '2', 'Biowares')
-	pcr2 = PCR(True, True, [primer1, taq1, dntp1, buffer2])
-	db.add_pcr(pcr2)
-
-	buffer3 = Aliquot(BUFFER, '3', 'Biowares')
-	pcr3 = PCR(True, True, [primer1, taq1, dntp1, buffer3])
-	db.add_pcr(pcr3)
-
-	buffer4 = Aliquot(BUFFER, '4', 'Biowares')
-	pcr4 = PCR(True, True, [primer1, taq1, dntp1, buffer4])
-	db.add_pcr(pcr4)
-
-	logic = PCRLogic(db)
-	possible_culprits = logic.make_probabilistic_deductions()
-	print possible_culprits
 
 """
 Simulates PCRs and evaluates cost.
 """
-def simulate_pcrs(num_experiments, num_pcrs):
+def simulate_pcrs():
+    num_experiments = 100
+    range_num_pcrs = range(1, 10)
+    state_probabilities = {'contaminated': 0.4, 'defective': 0.2, 'good': 0.4}
+    y = []
+    naive_y = []
+
+    for num_pcrs in range_num_pcrs:
+        errors = []
+        naive_errors = []
+
+        for i in range(num_experiments):
+	        db = PCRDatabase()
+	        logic = PCRLogic(db)
+	        curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
+	        
+	        for j in range(num_pcrs):
+	            false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
+	            false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
+	            
+	            if false_neg:
+	                pcr = PCR(False, False, curr_aliquots)
+	            elif false_pos:
+	                pcr = PCR(True, True, curr_aliquots)
+	            else:
+	                pcr = PCR(True, False, curr_aliquots)
+	            db.add_pcr(pcr)
+	            
+	            # Randomly choose new aliquot
+	            for i in range(len(curr_aliquots)):
+	                old_aliquot = curr_aliquots[i]
+	                new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
+	                aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
+	                curr_aliquots[i] = choose(aliquot_probabilities)
+
+	        # Compute the defective and contaminated aliquot probabilities
+	        deductions = logic.make_probabilistic_deductions()
+	        all_aliquots = db.get_all_aliquots()
+	        errors.append(rmse(all_aliquots, deductions))
+
+	        # Compute naive approach errors
+	        naive_deductions = dict(deductions)
+	        for error in naive_deductions:
+	        	prob_list = naive_deductions[error]
+	        	for i in range(len(prob_list)):
+	        		prob_list[i] = (prob_list[i][0], 1.0)
+	        naive_errors.append(rmse(all_aliquots, naive_deductions))
+	        
+	        print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
+	    
+        avg_error = sum(errors) / len(errors)
+        avg_naive_error = sum(naive_errors) / len(naive_errors)
+        y.append(avg_error)
+        naive_y.append(avg_naive_error)
+
+    print y
+    print naive_y
+
+    pyplot.plot(range_num_pcrs, y, label='Bayesian inference')
+    pyplot.plot(range_num_pcrs, naive_y, label='Naive approach')
+    pyplot.legend()
+    pyplot.xlabel('Number of PCRs in a set')
+    pyplot.ylabel('RMSE')
+    pyplot.show()
+
+def simulate_pcrs_with_heatmap():
+    num_pcrs = 10
     state_probabilities = {'contaminated': 0.04, 'defective': 0.04, 'good': 0.92}
-    errors = []
 
-    for i in range(num_experiments):
-        db = PCRDatabase()
-        logic = PCRLogic(db)
-        curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
-        
-        for j in range(num_pcrs):
-            false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
-            false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
-            
-            if false_neg:
-                pcr = PCR(False, False, curr_aliquots)
-            elif false_pos:
-                pcr = PCR(True, True, curr_aliquots)
-            else:
-                pcr = PCR(True, False, curr_aliquots)
-            db.add_pcr(pcr)
-            
-            # Randomly choose new aliquot
-            for i in range(len(curr_aliquots)):
-                old_aliquot = curr_aliquots[i]
-                new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
-                aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
-                curr_aliquots[i] = choose(aliquot_probabilities)
+    db = PCRDatabase()
+    logic = PCRLogic(db)
+    curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
 
-        # Compute the defective and contaminated aliquot probabilities
-        deductions = logic.make_probabilistic_deductions()
-        all_aliquots = db.get_all_aliquots()
-        errors.append(rmse(all_aliquots, deductions))
+    for j in range(num_pcrs):
+        false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
+        false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
         
-        print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
-    
-    print sum(errors) / len(errors)
+        if false_neg:
+            pcr = PCR(False, False, curr_aliquots)
+        elif false_pos:
+            pcr = PCR(True, True, curr_aliquots)
+        else:
+            pcr = PCR(True, False, curr_aliquots)
+        db.add_pcr(pcr)
+        
+        # Randomly choose new aliquot
+        for i in range(len(curr_aliquots)):
+            old_aliquot = curr_aliquots[i]
+            new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
+            aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
+            curr_aliquots[i] = choose(aliquot_probabilities)
+
+    # Compute the defective and contaminated aliquot probabilities
+    deductions = logic.make_probabilistic_deductions()
+    all_aliquots = db.get_all_aliquots()
+
+    print 'defective', dict(deductions['defective'])
+    print 'contaminated', dict(deductions['contaminated'])
+
+    # Create heatmap
+    actual_reagent_contaminations = np.array([[0. for _ in range(len(curr_aliquots))] for _ in range(num_pcrs)])
+    actual_reagent_defective = np.array([[0. for _ in range(len(curr_aliquots))] for _ in range(num_pcrs)])
+    predicted_reagent_contaminations = np.array([[0. for _ in range(len(curr_aliquots))] for _ in range(num_pcrs)])
+    predicted_reagent_defective = np.array([[0. for _ in range(len(curr_aliquots))] for _ in range(num_pcrs)])
+
+    for i in range(len(db.pcrs)):
+        pcr = db.pcrs[i]
+        for j in range(len(pcr.aliquots)):
+            aliquot = pcr.aliquots[j]
+            actual_reagent_contaminations[i][j] = float(aliquot.state == 'contaminated')
+            actual_reagent_defective[i][j] = float(aliquot.state == 'defective')
+            predicted_reagent_defective[i][j] = dict(deductions['defective']).get(aliquot, 0.0)
+            predicted_reagent_contaminations[i][j] = dict(deductions['contaminated']).get(aliquot, 0.0)
+
+    print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
+
+    # Plot heatmap for actual contaminations
+    row_labels = [REAGENT_MAP[aliquot.reagent] for aliquot in curr_aliquots]
+    column_labels = [i+1 for i in range(num_pcrs)]
+    plot_heatmap(actual_reagent_contaminations, row_labels, column_labels, matplotlib.cm.Reds, 'Actual contaminated reagents')
+    plot_heatmap(predicted_reagent_contaminations, row_labels, column_labels, matplotlib.cm.Reds, 'Bayesian probabilities for contaminated reagents')
+    plot_heatmap(actual_reagent_defective, row_labels, column_labels, matplotlib.cm.Blues, 'Actual defective reagents')
+    plot_heatmap(predicted_reagent_defective, row_labels, column_labels, matplotlib.cm.Blues, 'Bayesian probabilities for defective reagents')
+    pyplot.show()
+
+def plot_heatmap(data, row_labels, column_labels, color, title):
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+    heatmap = ax.pcolor(data, cmap=color, edgecolors='k', vmax=1.0)
+
+    # put the major ticks at the middle of each cell
+    ax.set_xticks(np.arange(data.shape[1])+0.5, minor=False)
+    ax.set_yticks(np.arange(data.shape[0])+0.5, minor=False)
+
+    # want a more natural, table-like display
+    ax.invert_yaxis()
+    ax.xaxis.tick_top()
+
+    ax.set_xticklabels(row_labels, minor=False)
+    ax.set_yticklabels(column_labels, minor=False)
+    pyplot.ylabel('PCR')
+    pyplot.title(title, y=1.08)
 
 def rmse(aliquots, deductions):
     results = []
@@ -235,6 +293,72 @@ def rmse(aliquots, deductions):
         results.append(math.sqrt(sum(squared_errors) / len(squared_errors)))
     return sum(results) / len(results)
         
+def simulate_pcrs_with_probabilities():
+    num_experiments = 100
+    probabilities = [0.01 * i for i in range(1, 10)]
+    num_pcrs = 5
+    y = []
+    naive_y = []
+
+    for probability in probabilities:
+        state_probabilities = {'contaminated': probability, 'defective': probability, 'good': 1 - probability}
+        errors = []
+        naive_errors = []
+
+        for i in range(num_experiments):
+            db = PCRDatabase()
+            logic = PCRLogic(db)
+            curr_aliquots = [Aliquot(reagent, 1, 'Biowares', choose(state_probabilities)) for reagent in REAGENT_MAP]
+            
+            for j in range(num_pcrs):
+                false_neg = any(map(lambda aliquot: aliquot.state == 'defective', curr_aliquots))
+                false_pos = any(map(lambda aliquot: aliquot.state == 'contaminated', curr_aliquots)) and not false_neg
+                
+                if false_neg:
+                    pcr = PCR(False, False, curr_aliquots)
+                elif false_pos:
+                    pcr = PCR(True, True, curr_aliquots)
+                else:
+                    pcr = PCR(True, False, curr_aliquots)
+                db.add_pcr(pcr)
+                
+                # Randomly choose new aliquot
+                for i in range(len(curr_aliquots)):
+                    old_aliquot = curr_aliquots[i]
+                    new_aliquot = Aliquot(old_aliquot.reagent, old_aliquot.id+1, old_aliquot.manufacturer, choose(state_probabilities))
+                    aliquot_probabilities = {old_aliquot: 0.8, new_aliquot: 0.2}
+                    curr_aliquots[i] = choose(aliquot_probabilities)
+
+            # Compute the defective and contaminated aliquot probabilities
+            deductions = logic.make_probabilistic_deductions()
+            all_aliquots = db.get_all_aliquots()
+            errors.append(rmse(all_aliquots, deductions))
+
+            # Compute naive approach errors
+            naive_deductions = dict(deductions)
+            for error in naive_deductions:
+                prob_list = naive_deductions[error]
+                for i in range(len(prob_list)):
+                    prob_list[i] = (prob_list[i][0], 1.0)
+            naive_errors.append(rmse(all_aliquots, naive_deductions))
+            
+            print [(pcr.pos_control_result, pcr.negative_control_result) for pcr in db.pcrs]
+        
+        avg_error = sum(errors) / len(errors)
+        avg_naive_error = sum(naive_errors) / len(naive_errors)
+        y.append(avg_error)
+        naive_y.append(avg_naive_error)
+
+    print y
+    print naive_y
+
+    pyplot.plot(probabilities, y, label='Bayesian inference')
+    pyplot.plot(probabilities, naive_y, label='Naive approach')
+    pyplot.legend(loc=2)
+    pyplot.xlabel('Probability of reagent being defective or contaminated')
+    pyplot.ylabel('RMSE')
+    pyplot.title('RMSE as a function of reagent defective/contaminated probability')
+    pyplot.show()
 			
 def choose(d):
     r = random.uniform(0, sum(d.itervalues()))

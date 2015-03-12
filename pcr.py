@@ -9,7 +9,7 @@ COMMANDS = {'0' : 'Quit', '1' : 'Read PCR Database from File', '2' : 'Add new PC
 	'3' : 'Detect Errors Deterministically', '4' : 'Detect Errors Probabalistically', '5' : 'Write PCR Database to File' }
 
 def main():
-	db = PCRDatabase('e2.txt')
+	db = PCRDatabase()
 	logic = PCRLogic(db)
 	while True:
 		command = get_user_command()

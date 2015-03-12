@@ -13,7 +13,7 @@ BUFFER = 3
 BIVALENT_CATION = 4
 MONOVALENT_CATION = 5
 
-REAGENT_MAP = {0: 'PRIMER', 1: 'TAQ', 2: 'DNTP', 3: 'BUFFER', 4: 'BIVALENT_CATION', 5: 'MONOVALENT_CATION'}
+REAGENT_MAP = {0: 'PRIMER', 1: 'TAQ', 2: 'DNTP', 3: 'BUFFER', 4: 'BIVALENT', 5: 'MONOVALENT'}
 REVERSE_REAGENT_MAP = {'PRIMER': 0, 'TAQ': 1, 'DNTP': 2, 'BUFFER': 3, 'BIVALENT_CATION': 4, 'MONOVALENT_CATION': 5}
 
 class PCR:
@@ -52,19 +52,13 @@ class Aliquot:
 	def is_same_aliquot(self, other):
 		return self.reagent == other.reagent and self.id == other.id and self.manufacturer == other.manufacturer
 		
-class PCRDatabase:
-	"""
-	def __init__(self):
-		self.pcrs = list()
-		self.error_probs = dict()
-	"""
-	
-	def __init__(self, filename=''):
+class PCRDatabase:	
+	def __init__(self, filename=None):
 		self.pcrs = list()
 		# Error probabilities is a dictionary of (error, reagent, manufacturer) => prob.
 		# Users supply any probabilities they can estimate.  The default probability is 0.1.
 		self.error_probs = dict()
-		if filename != '':
+		if filename:
 			f = open(filename, 'r')
 			n_pcrs = int(f.readline())
 			# Throw away hard return
