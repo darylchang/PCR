@@ -53,47 +53,56 @@ class Aliquot:
 		return self.reagent == other.reagent and self.id == other.id and self.manufacturer == other.manufacturer
 		
 class PCRDatabase:
+	"""
 	def __init__(self):
 		self.pcrs = list()
 		self.error_probs = dict()
-		
-	def __init__(self, filename):
+	"""
+	
+	def __init__(self, filename=''):
 		self.pcrs = list()
 		# Error probabilities is a dictionary of (error, reagent, manufacturer) => prob.
 		# Users supply any probabilities they can estimate.  The default probability is 0.1.
 		self.error_probs = dict()
-		f = open(filename, 'r')
-		n_pcrs = int(f.readline())
-		# Throw away hard return
-		f.readline()
-		for i in range(n_pcrs):
-			pos_control_result = f.readline() == 'True'
-			neg_control_result = f.readline() == 'True'
-			aliquots = list()
-			line = f.readline()
-			while len(line.strip()) != 0:
-				aliquot = self.parse_reagent_line(line.split())
-				aliquots.append(aliquot)
+		if filename != '':
+			f = open(filename, 'r')
+			n_pcrs = int(f.readline())
+			# Throw away hard return
+			f.readline()
+			all_aliquots = list()
+			for i in range(n_pcrs):
+				pos_control_result = f.readline().strip() == 'True'
+				neg_control_result = f.readline().strip() == 'True'
+				aliquots = list()
 				line = f.readline()
-			pcr = PCR(pos_control_result, neg_control_result, aliquots)
-			self.add_pcr(pcr)
-		for line in f:
-			[error, r_tag, manufacturer, prob] = line.split()
-			self.error_probs[(error, REVERSE_REAGENT_MAP[r_tag], manufacturer)] = float(prob)
+				while len(line.strip()) != 0:
+					aliquot = self.parse_reagent_line(line.split(), all_aliquots)
+					aliquots.append(aliquot)
+					line = f.readline()
+				pcr = PCR(pos_control_result, neg_control_result, aliquots)
+				self.add_pcr(pcr)
+			for line in f:
+				[error, r_tag, manufacturer, prob] = line.split()
+				self.error_probs[(error, REVERSE_REAGENT_MAP[r_tag], manufacturer)] = float(prob)
 		
 	def get_error_prob(self, aliquot, error):
-		if (error, aliquot.reagent, aliquot.manufacturer) in error_probs:
-			return error_probs[(error, aliquot.reagent, aliquot.manufacturer)]
+		if (error, aliquot.reagent, aliquot.manufacturer) in self.error_probs:
+			return self.error_probs[(error, aliquot.reagent, aliquot.manufacturer)]
 		elif error == 'defective':
 			return 0.1
 		elif error == 'contaminated':
 			return 0.1
 	
-	def parse_reagent_line(self, words):
+	def parse_reagent_line(self, words, all_aliquots):
 		reagent = REVERSE_REAGENT_MAP[words[0]]
 		id = words[1]
 		manufacturer = words[2]
-		return Aliquot(reagent, id, manufacturer)
+		new_aliquot = Aliquot(reagent, id, manufacturer)
+		for aliquot in all_aliquots:
+			if aliquot.is_same_aliquot(new_aliquot):
+				return aliquot
+		all_aliquots.append(new_aliquot)
+		return new_aliquot
 	
 	def add_pcr(self, pcr):
 		self.pcrs.append(pcr)

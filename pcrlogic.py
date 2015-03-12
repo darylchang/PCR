@@ -11,6 +11,32 @@ FIT_INDEX = 1
 class PCRLogic:
 	def __init__(self, pcr_database):
 		self.pcr_database = pcr_database
+		
+	def make_deterministic_deductions(self):
+		possible_defective_reagents = list()
+		possible_contaminated_reagents = list()
+		for pcr in self.pcr_database.pcrs:
+			if pcr.had_defective_reagent():
+				res = self.make_deductions(pcr)
+				for aliquot in res:
+					should_add = True
+					for other in possible_defective_reagents:
+						if other.is_same_aliquot(aliquot):
+							should_add = False
+					if should_add:
+						possible_defective_reagents.append(aliquot)
+					
+			if pcr.had_contaminated_reagent():
+				res = self.make_deductions(pcr)
+				for aliquot in res:
+					should_add = True
+					for other in possible_contaminated_reagents:
+						if other.is_same_aliquot(aliquot):
+							should_add = False
+					if should_add:
+						possible_contaminated_reagents.append(aliquot)
+						
+		return possible_defective_reagents, possible_contaminated_reagents
     
 	"""
 	Right now, this function returns a list of possible culprit aliquots.
@@ -80,7 +106,7 @@ class PCRLogic:
 	TODO: Take into account the manufacturer of the aliquot here?
 	"""
 	def get_error_prob(self, index, aliquots, error):
-		return self.database.get_error_prob(aliquots[index], error)
+		return self.pcr_database.get_error_prob(aliquots[index], error)
 	
 	def find_defective_aliquots(self, pcr):
 		# Start out with all the aliquots as defective candidates
