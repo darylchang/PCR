@@ -104,7 +104,7 @@ class PCRLogic:
 		temp_list = [assignment_map[assign] for assign in assignment_map if not assign[aliquot_index]]
 		prob_results_given_fine = sum([tup[PROB_INDEX] for tup in temp_list if tup[FIT_INDEX]])
 		prob_results = prob_results_given_error / (prob_results_given_error + prob_results_given_fine) \
-					   if prob_results_given_error and prob_results_given_fine else 0. 
+					   if prob_results_given_error or prob_results_given_fine else 0. 
 		return prob_results
 
 	"""
