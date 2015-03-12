@@ -8,6 +8,7 @@ from pcrclasses import *
 COMMANDS = {'0' : 'Quit', '1' : 'Read PCR Database from File', '2' : 'Add new PCR', 
 	'3' : 'Detect Errors Deterministically', '4' : 'Detect Errors Probabalistically', '5' : 'Write PCR Database to File', '6': 'Visualize Current Reagent Ontology' }
 
+
 def main():
 	db = PCRDatabase()
 	logic = PCRLogic(db)
